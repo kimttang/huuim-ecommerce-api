@@ -34,4 +34,12 @@ public class User extends BaseEntity {
         this.name = name;
         this.role = role;
     }
+    /**
+     * 왜:
+     * - 비밀번호 변경 로직을 도메인 내부에 캡슐화
+     * - 무분별한 Setter 사용 방지
+     */
+    public void updatePassword(String newPassword) {
+        this.loginPw = newPassword;
+    }
 }

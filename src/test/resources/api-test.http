@@ -27,7 +27,7 @@ X-Huuim-LoginId: admin
 X-Huuim-LoginPw: 1234
 
 {
-  "name": "휴이엠 한정판 키보드",
+  "name": "휴이엠 한정판 상품",
   "price": 150000,
   "stock": 10
 }
@@ -48,8 +48,16 @@ X-Huuim-LoginId: user1
 X-Huuim-LoginPw: 1234
 
 {
-  "productId": 1,
-  "quantity": 2
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 2
+    },
+    {
+      "productId": 2,
+      "quantity": 1
+    }
+  ]
 }
 
 ### 🚨 7. [예외 처리 테스트] 권한 없는 유저가 상품 등록 시도
@@ -63,3 +71,22 @@ X-Huuim-LoginPw: 1234
   "price": 100,
   "stock": 1
 }
+### 내 정보 조회
+GET http://localhost:8080/api/v1/users/me
+X-Huuim-LoginId: user1
+X-Huuim-LoginPw: 1234
+
+### 비밀번호 변경
+PATCH http://localhost:8080/api/v1/users/me/password
+Content-Type: application/json
+X-Huuim-LoginId: user1
+X-Huuim-LoginPw: 1234
+
+{
+  "newPassword": "newPassword5678"
+}
+
+### 비밀번호 변경 후, 바뀐 비밀번호로 내 정보 조회 (실패해야 정상: 1234 / 성공해야 정상: newPassword5678)
+GET http://localhost:8080/api/v1/users/me
+X-Huuim-LoginId: user1
+X-Huuim-LoginPw: newPassword5678
