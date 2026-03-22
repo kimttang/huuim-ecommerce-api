@@ -65,7 +65,7 @@
 
 ```java
 @Lock(LockModeType.PESSIMISTIC_WRITE)
-
+```
 DB 레벨에서 row lock 획득 (SELECT ... FOR UPDATE)
 
 하나의 트랜잭션이 작업 완료 전까지 다른 트랜잭션 접근 차단
@@ -178,35 +178,16 @@ Request
 
 동시성 100% 보장
 
-🧠 핵심 설계 요약
+## 🧠 핵심 설계 요약
 
-동시성
-
-PESSIMISTIC_WRITE로 DB 레벨 완전 제어
-
-성능
-
-인덱스 + OSIV OFF
-
-안정성
-
-트랜잭션 기반 처리
-
-멀티스레드 테스트 검증 완료
-
-아키텍처
-
-Controller → Service → Repository
-
-인증 로직 중앙화
-
-📌 결론
-
-이 프로젝트는 단순 CRUD 구현을 넘어
-
-동시성 문제 해결
+- 동시성: PESSIMISTIC_WRITE로 DB 레벨 완전 제어
+- 성능: 인덱스 + OSIV OFF
+- 안정성: 트랜잭션 기반 처리 및 멀티스레드 테스트 검증 완료
+- 아키텍처: Controller → Service → Repository
+- 인증: 인증 로직 중앙화
 
 ### ✨ 추가 고도화 (Advanced Features)
+
 - **글로벌 예외 처리 (Global Exception Handling)**
   - `@RestControllerAdvice`를 활용하여 예외 처리 중앙화
   - 클라이언트에게는 통일된 에러 응답(ErrorResponse) 규격을 제공하고, 서버 내부 에러(500)는 로깅하여 보안 및 유지보수성 향상
@@ -214,8 +195,8 @@ Controller → Service → Repository
   - `@Valid` 및 Validation 어노테이션(`@Min`, `@NotBlank` 등)을 적용
   - Controller 계층에서 잘못된 요청(예: 음수 수량, 빈 문자열)을 비즈니스 로직 도달 전에 사전 차단하여 안전성 확보
 
-DB 레벨 성능 최적화
+---
 
-AI 기반 개발 프로세스 활용
+## 📌 결론
 
-까지 포함한 실무 지향 백엔드 설계 및 구현 경험을 목표로 함
+이 프로젝트는 단순 CRUD 구현을 넘어, **동시성 문제 해결, DB 레벨 성능 최적화, 고도화된 예외 처리 및 방어 로직, 그리고 AI 기반 개발 프로세스 활용**까지 포함한 실무 지향 백엔드 설계 및 구현 경험을 목표로 구축되었습니다.
