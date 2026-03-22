@@ -206,6 +206,14 @@ Controller → Service → Repository
 
 동시성 문제 해결
 
+### ✨ 추가 고도화 (Advanced Features)
+- **글로벌 예외 처리 (Global Exception Handling)**
+  - `@RestControllerAdvice`를 활용하여 예외 처리 중앙화
+  - 클라이언트에게는 통일된 에러 응답(ErrorResponse) 규격을 제공하고, 서버 내부 에러(500)는 로깅하여 보안 및 유지보수성 향상
+- **데이터 무결성 검증 (Validation)**
+  - `@Valid` 및 Validation 어노테이션(`@Min`, `@NotBlank` 등)을 적용
+  - Controller 계층에서 잘못된 요청(예: 음수 수량, 빈 문자열)을 비즈니스 로직 도달 전에 사전 차단하여 안전성 확보
+
 DB 레벨 성능 최적화
 
 AI 기반 개발 프로세스 활용
