@@ -74,8 +74,16 @@
 @Lock(LockModeType.PESSIMISTIC_WRITE)
 ```
 
+- DB 레벨에서 row lock 획득 (SELECT ... FOR UPDATE)
+
+- 하나의 트랜잭션이 작업 완료 전까지 다른 트랜잭션 접근 차단
+
+---
+
 ### 문제 2: 다건 상품 주문 시 Deadlock (교착 상태)
 - 여러 상품을 한 번에 주문할 때, 트랜잭션마다 락을 획득하는 순서가 다르면 서로 락 해제를 기다리는 **데드락 발생 위험**
+
+---
 
 #### 해결 방법: 락 획득 순서 강제 (Sorting)
 - 애플리케이션 계층에서 파라미터로 넘어온 상품 ID들을 오름차순으로 정렬
@@ -112,24 +120,31 @@ ExecutorService + CountDownLatch 활용
 
 데이터 정합성 100% 보장 ✅
 
-🚀 성능 최적화
-1. 인덱스 적용
+## 🚀 성능 최적화
 
+### 1. 인덱스 적용
 상품 조회 성능 개선을 위해 정렬 필드에 인덱스 적용
 
-필드	목적
-price	가격 오름차순
-likesCount	좋아요 내림차순
-createdAt	최신순
+| 필드 | 목적 |
+|---|---|
+| `price` | 가격 오름차순 조회 |
+| `likesCount` | 좋아요 내림차순 조회 |
+| `createdAt` | 최신순 조회 |
+
+```java
 @Table(indexes = {
     @Index(name = "idx_price", columnList = "price"),
     @Index(name = "idx_likes_count", columnList = "likesCount"),
     @Index(name = "idx_created_at", columnList = "createdAt")
 })
+```
 2. OSIV 비활성화
+   
+```YAML
 spring:
   jpa:
     open-in-view: false
+```
 
 커넥션 점유 시간 최소화
 
@@ -138,50 +153,46 @@ spring:
 실무 환경에 적합한 설정
 
 📡 API 명세
-1. 회원 (Users)
+
+## 1. 회원 (Users)
 - **회원가입** (`POST /api/v1/users`)
 - **내 정보 조회** (`GET /api/v1/users/me`) : 헤더 인증을 통한 본인 정보 조회
 - **비밀번호 변경** (`PATCH /api/v1/users/me/password`) : 기존 비밀번호 확인 후 변경
   
-회원가입
-POST /api/v1/users
+- 회원가입 (POST /api/v1/users)
 
-Request
+- 내 정보 조회 (GET /api/v1/users/me) : 헤더 인증을 통한 본인 정보 조회
 
+- 비밀번호 변경 (PATCH /api/v1/users/me/password) : 기존 비밀번호 확인 후 변경
+
+```JSON
 {
   "loginId": "user1",
   "loginPw": "1234",
   "name": "홍길동",
   "role": "USER"
 }
-2. 상품 (Products)
-상품 등록 (ADMIN only)
-POST /api/v1/products
+```
 
-Header
+## 2. 상품 (Products)
+   
+- 상품 등록 (POST /api/v1/products) - ADMIN 전용
 
-X-Huuim-LoginId
-X-Huuim-LoginPw
-상품 목록 조회
-GET /api/v1/products
+- 상품 목록 조회 (GET /api/v1/products) - 인증 없음
 
-Query Params
+Query Params: sort (latest | price_asc | likes_desc), page (default 0), size (default 20)
 
-sort: latest | price_asc | likes_desc
+## 3. 좋아요 (Likes)
+   
+- 좋아요 등록 (POST /api/v1/products/{productId}/likes)
 
-page: default 0
+- 좋아요 취소 (DELETE /api/v1/products/{productId}/likes)
 
-size: default 20
+- 좋아요 목록 조회 (GET /api/v1/likes)
 
-3. 좋아요 (Likes)
-좋아요 등록
-POST /api/v1/products/{productId}/likes
+Unique Constraint 및 사전 검증으로 중복 차단, N+1 방지 로직 적용
 
-중복 좋아요 방지 (Unique Constraint + 사전 검증)
-
-likesCount 증가
-
-4. 주문 (Orders)
+## 4. 주문 (Orders)
 - **다건 주문 요청** (`POST /api/v1/orders`)
 ```json
 {
@@ -197,9 +208,9 @@ likesCount 증가
   ]
 }
 ```
-비관적 락 & 데드락 방지 정렬 기반 재고 차감
+- 비관적 락 & 데드락 방지 정렬 기반 재고 차감
 
-동시성 100% 보장
+- 동시성 100% 보장
 
 ## 🧠 핵심 설계 요약
 
