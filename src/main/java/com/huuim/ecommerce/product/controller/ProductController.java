@@ -3,6 +3,7 @@ package com.huuim.ecommerce.product.controller;
 import com.huuim.ecommerce.product.dto.ProductRequest;
 import com.huuim.ecommerce.product.dto.ProductResponse;
 import com.huuim.ecommerce.product.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +19,7 @@ public class ProductController {
     public Long createProduct(
             @RequestHeader("X-Huuim-LoginId") String loginId,
             @RequestHeader("X-Huuim-LoginPw") String loginPw,
-            @RequestBody ProductRequest request
+            @Valid @RequestBody ProductRequest request
     ) {
         return productService.createProduct(loginId, loginPw, request);
     }

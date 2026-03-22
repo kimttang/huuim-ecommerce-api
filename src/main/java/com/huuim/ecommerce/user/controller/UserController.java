@@ -2,6 +2,7 @@ package com.huuim.ecommerce.user.controller;
 
 import com.huuim.ecommerce.user.dto.UserSignupRequest;
 import com.huuim.ecommerce.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +14,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public Long signup(@RequestBody UserSignupRequest request) {
+    public Long signup(@Valid @RequestBody UserSignupRequest request) {
         return userService.signup(request);
     }
 }

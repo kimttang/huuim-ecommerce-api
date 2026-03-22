@@ -1,6 +1,7 @@
 package com.huuim.ecommerce.product.domain;
 
 import com.huuim.ecommerce.common.entity.BaseEntity;
+import com.huuim.ecommerce.common.exception.OutOfStockException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -49,7 +50,7 @@ public class Product extends BaseEntity {
      */
     public void removeStock(int quantity) {
         if (this.stock < quantity) {
-            throw new IllegalArgumentException("재고가 부족합니다.");
+            throw new OutOfStockException();
         }
         this.stock -= quantity;
     }

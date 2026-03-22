@@ -4,6 +4,7 @@ import com.huuim.ecommerce.order.dto.OrderRequest;
 import com.huuim.ecommerce.order.service.OrderService;
 import com.huuim.ecommerce.user.domain.User;
 import com.huuim.ecommerce.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +20,7 @@ public class OrderController {
     public Long createOrder(
             @RequestHeader("X-Huuim-LoginId") String loginId,
             @RequestHeader("X-Huuim-LoginPw") String loginPw,
-            @RequestBody OrderRequest request
+            @Valid @RequestBody OrderRequest request
     ) {
         User user = userService.authenticate(loginId, loginPw);
 

@@ -16,6 +16,9 @@ public class UserService {
 
     @Transactional
     public Long signup(UserSignupRequest request) {
+        if (userRepository.findByLoginId(request.loginId()).isPresent()) {
+            throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
+        }
         User user = new User(
                 request.loginId(),
                 request.loginPw(),
