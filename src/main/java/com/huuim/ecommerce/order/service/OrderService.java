@@ -2,6 +2,8 @@ package com.huuim.ecommerce.order.service;
 
 import com.huuim.ecommerce.common.exception.OutOfStockException;
 import com.huuim.ecommerce.order.domain.Order;
+import com.huuim.ecommerce.order.domain.OrderItem;
+import com.huuim.ecommerce.order.dto.OrderRequest;
 import com.huuim.ecommerce.order.repository.OrderRepository;
 import com.huuim.ecommerce.product.domain.Product;
 import com.huuim.ecommerce.product.repository.ProductRepository;
@@ -11,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -19,32 +24,44 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
 
-    /**
-     * 왜:
-     * - 트랜잭션 시작 후 비관적 락으로 상품 row를 선점
-     * - 해당 트랜잭션이 끝날 때까지 다른 트랜잭션은 접근 불가
-     * - 재고 감소 로직의 원자성 보장
-     */
     @Transactional
-    public Long createOrder(Long userId, Long productId, int quantity) {
+    public Long createOrder(Long userId, OrderRequest request) {
 
-        // 1. 유저 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
 
-        // 2. 비관적 락으로 상품 조회
-        Product product = productRepository.findByIdWithPessimisticLock(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품 없음"));
+        /**
+         * 왜:
+         * - 데드락 방지 핵심 전략
+         * - 모든 트랜잭션이 동일한 순서로 row lock 획득하도록 강제
+         */
+        List<Long> sortedProductIds = request.items().stream()
+                .map(OrderRequest.OrderItemRequest::productId)
+                .distinct()
+                .sorted()
+                .toList();
 
-        // 3. 재고 검증 및 차감
-        if (product.getStock() < quantity) {
-            throw new OutOfStockException();
+        // 비관적 락으로 상품 조회
+        List<Product> products = productRepository.findByIdInWithPessimisticLock(sortedProductIds);
+
+        Map<Long, Product> productMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        Order order = new Order(user);
+
+        for (OrderRequest.OrderItemRequest item : request.items()) {
+            Product product = productMap.get(item.productId());
+
+            if (product == null) {
+                throw new IllegalArgumentException("존재하지 않는 상품이 포함되어 있습니다: " + item.productId());
+            }
+
+            // 왜: Product 엔티티 내부의 removeStock 메서드에서 자체적으로 재고 부족 예외를 던지도록 위임
+            product.removeStock(item.quantity());
+
+            OrderItem orderItem = new OrderItem(product, item.quantity());
+            order.addOrderItem(orderItem);
         }
-
-        product.removeStock(quantity);
-
-        // 4. 주문 생성
-        Order order = new Order(user, product, quantity);
 
         return orderRepository.save(order).getId();
     }

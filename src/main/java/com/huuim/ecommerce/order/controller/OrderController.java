@@ -20,14 +20,11 @@ public class OrderController {
     public Long createOrder(
             @RequestHeader("X-Huuim-LoginId") String loginId,
             @RequestHeader("X-Huuim-LoginPw") String loginPw,
-            @Valid @RequestBody OrderRequest request
+            @Valid @RequestBody OrderRequest request // 리스트형 DTO
     ) {
         User user = userService.authenticate(loginId, loginPw);
 
-        return orderService.createOrder(
-                user.getId(),
-                request.productId(),
-                request.quantity()
-        );
+        // Service 시그니처에 맞게 파라미터 전달 (유저ID, OrderRequest 통째로)
+        return orderService.createOrder(user.getId(), request);
     }
 }
