@@ -1,11 +1,13 @@
 package com.huuim.ecommerce.order.domain;
 
 import com.huuim.ecommerce.common.entity.BaseEntity;
-import com.huuim.ecommerce.product.domain.Product;
 import com.huuim.ecommerce.user.domain.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -18,22 +20,32 @@ public class Order extends BaseEntity {
     private Long id;
 
     /**
-     * 왜: 주문 조회 시 불필요한 유저/상품 즉시 로딩 방지
+     * 왜:
+     * - 주문은 항상 유저에 종속
+     * - Lazy 로딩으로 불필요한 조회 방지
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "product_id")
-    private Product product;
+    /**
+     * 왜:
+     * - 주문 1건에 여러 상품 포함
+     * - cascade로 Order 저장 시 OrderItem 자동 저장
+     */
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
-    @Column(nullable = false)
-    private Integer quantity;
-
-    public Order(User user, Product product, Integer quantity) {
+    public Order(User user) {
         this.user = user;
-        this.product = product;
-        this.quantity = quantity;
+    }
+
+    /**
+     * 왜:
+     * - 연관관계 편의 메서드로 양방향 일관성 유지
+     */
+    public void addOrderItem(OrderItem orderItem) {
+        orderItems.add(orderItem);
+        orderItem.assignOrder(this);
     }
 }
