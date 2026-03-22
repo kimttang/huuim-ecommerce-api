@@ -1,5 +1,6 @@
 package com.huuim.ecommerce.order.service;
 
+import com.huuim.ecommerce.order.dto.OrderRequest;
 import com.huuim.ecommerce.product.domain.Product;
 import com.huuim.ecommerce.product.repository.ProductRepository;
 import com.huuim.ecommerce.user.domain.User;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,10 +54,15 @@ class OrderServiceConcurrencyTest {
         ExecutorService executorService = Executors.newFixedThreadPool(32);
         CountDownLatch latch = new CountDownLatch(threadCount);
 
+        // ✅ 수정된 부분: 변경된 DTO 구조(List)에 맞게 요청 객체 생성
+        OrderRequest.OrderItemRequest itemRequest = new OrderRequest.OrderItemRequest(productId, 1);
+        OrderRequest request = new OrderRequest(List.of(itemRequest));
+
         for (int i = 0; i < threadCount; i++) {
             executorService.submit(() -> {
                 try {
-                    orderService.createOrder(userId, productId, 1);
+                    // ✅ 수정된 부분: 파라미터를 request 객체로 전달
+                    orderService.createOrder(userId, request);
                 } catch (Exception ignored) {
                 } finally {
                     latch.countDown();
@@ -69,8 +76,9 @@ class OrderServiceConcurrencyTest {
 
         /**
          * 왜:
-         * - 비관적 락이 없다면 stock < 0 또는 race condition 발생
-         * - 비관적 락 적용 시 정확히 0 보장
+         * - 비관적 락(Pessimistic Lock)이 정상 작동했다면
+         * - 100개의 스레드가 순차적으로 DB row에 접근하여
+         * - 재고가 정확히 0이 되어야 함
          */
         assertThat(product.getStock()).isEqualTo(0);
     }
