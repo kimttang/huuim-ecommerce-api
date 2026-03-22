@@ -48,6 +48,10 @@
 
 - ❗ **도메인 책임 강화**
   - 재고 감소, 좋아요 증가 로직을 Entity 내부로 캡슐화
+  
+- ❗ **조회 성능 최적화 및 데드락 방지 (Cross-Validation)**
+  - 비관적 락 적용 쿼리와 일반 조회 쿼리 분리
+  - **AI 교차 검증을 통해 다건 주문 시 발생할 수 있는 데드락(Deadlock) 위험을 식별하고, DB 락 획득 순서를 강제하는 로직 추가**
 
 👉 단순 AI 사용이 아닌 **설계 → 생성 → 검증 → 개선의 반복 구조**로 품질 확보
 
@@ -55,7 +59,7 @@
 
 ## ⚙️ 동시성 제어 해결 전략
 
-### 문제
+### 문제 1
 - 수백 명의 사용자가 동시에 동일 상품 주문 시
 - 재고가 음수가 되는 **Race Condition 발생**
 
@@ -66,6 +70,13 @@
 ```java
 @Lock(LockModeType.PESSIMISTIC_WRITE)
 ```
+
+### 문제 2: 다건 상품 주문 시 Deadlock (교착 상태)
+- 여러 상품을 한 번에 주문할 때, 트랜잭션마다 락을 획득하는 순서가 다르면 서로 락 해제를 기다리는 **데드락 발생 위험**
+
+#### 해결 방법: 락 획득 순서 강제 (Sorting)
+- 애플리케이션 계층에서 파라미터로 넘어온 상품 ID들을 오름차순으로 정렬
+- DB 조회 시 `ORDER BY p.id ASC`를 강제하여 모든 트랜잭션이 일관된 순서로 락을 획득하도록 제어하여 순환 대기 차단
 DB 레벨에서 row lock 획득 (SELECT ... FOR UPDATE)
 
 하나의 트랜잭션이 작업 완료 전까지 다른 트랜잭션 접근 차단
@@ -125,6 +136,10 @@ spring:
 
 📡 API 명세
 1. 회원 (Users)
+- **회원가입** (`POST /api/v1/users`)
+- **내 정보 조회** (`GET /api/v1/users/me`) : 헤더 인증을 통한 본인 정보 조회
+- **비밀번호 변경** (`PATCH /api/v1/users/me/password`) : 기존 비밀번호 확인 후 변경
+  
 회원가입
 POST /api/v1/users
 
@@ -164,17 +179,22 @@ POST /api/v1/products/{productId}/likes
 likesCount 증가
 
 4. 주문 (Orders)
-주문 요청
-POST /api/v1/orders
-
-Request
-
+- **다건 주문 요청** (`POST /api/v1/orders`)
+```json
 {
-  "productId": 1,
-  "quantity": 2
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 2
+    },
+    {
+      "productId": 2,
+      "quantity": 1
+    }
+  ]
 }
-
-비관적 락 기반 재고 차감
+```
+비관적 락 & 데드락 방지 정렬 기반 재고 차감
 
 동시성 100% 보장
 
